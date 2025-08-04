@@ -1,0 +1,282 @@
+<div class="container">
+  <div class="header">
+    <h1>Gestione Assicurati</h1>
+    <button class="btn btn-primary" (click)="openCreateModal()">
+      <i class="icon-plus"></i>
+      Nuovo Assicurato
+    </button>
+  </div>
+
+  <!-- Filtri -->
+  <div class="filters">
+    <div class="filter-group">
+      <label for="search">Cerca:</label>
+      <input
+        id="search"
+        type="text"
+        placeholder="Nome, cognome, codice fiscale, email..."
+        [value]="searchTerm()"
+        (input)="onSearchChange($event)"
+        class="form-control">
+    </div>
+
+    <div class="filter-group">
+      <label for="status">Stato:</label>
+      <select
+        id="status"
+        [value]="filterAttivo()"
+        (change)="onFilterChange($event)"
+        class="form-control">
+        <option value="all">Tutti</option>
+        <option value="active">Attivi</option>
+        <option value="inactive">Non Attivi</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Tabella Assicurati -->
+  <div class="table-container">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Codice Fiscale</th>
+          <th>Nome Completo</th>
+          <th>Età</th>
+          <th>Città</th>
+          <th>Email</th>
+          <th>Polizze</th>
+          <th>Sinistri</th>
+          <th>Stato</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (assicurato of filteredAssicurati(); track assicurato.id_assicurato) {
+          <tr>
+            <td class="code">{{ assicurato.codice_fiscale }}</td>
+            <td>
+              <div class="name-cell">
+                <strong>{{ assicurato.nome_completo }}</strong>
+                @if (assicurato.telefono) {
+                  <small>📞 {{ assicurato.telefono }}</small>
+                }
+              </div>
+            </td>
+            <td>{{ assicurato.eta }} anni</td>
+            <td>{{ assicurato.citta || '-' }}</td>
+            <td>
+              @if (assicurato.email) {
+                <a [href]="'mailto:' + assicurato.email">{{ assicurato.email }}</a>
+              } @else {
+                <span>-</span>
+              }
+            </td>
+            <td>
+              <div class="stats-cell">
+                <span class="stat-badge">{{ assicurato.numero_polizze }} totali</span>
+                @if (assicurato.polizze_attive > 0) {
+                  <span class="stat-badge active">{{ assicurato.polizze_attive }} attive</span>
+                }
+              </div>
+            </td>
+            <td>
+              <div class="stats-cell">
+                @if (assicurato.numero_sinistri > 0) {
+                  <span class="stat-badge">{{ assicurato.numero_sinistri }} totali</span>
+                  @if (assicurato.sinistri_aperti > 0) {
+                    <span class="stat-badge warning">{{ assicurato.sinistri_aperti }} aperti</span>
+                  }
+                } @else {
+                  <span>-</span>
+                }
+              </div>
+            </td>
+            <td>
+              <span [class]="'badge ' + getStatusBadgeClass(assicurato.attivo)">
+                {{ assicurato.attivo ? 'Attivo' : 'Non Attivo' }}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button
+                  class="btn btn-sm btn-info"
+                  (click)="viewDetails(assicurato)"
+                  title="Visualizza dettagli">
+                  <i class="icon-eye"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-secondary"
+                  (click)="openEditModal(assicurato)"
+                  title="Modifica">
+                  <i class="icon-edit"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-danger"
+                  (click)="deleteAssicurato(assicurato.id_assicurato)"
+                  title="Elimina">
+                  <i class="icon-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="9" class="no-data">
+              Nessun assicurato trovato
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal per Creazione/Modifica -->
+  @if (isModalOpen()) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ isEditing() ? 'Modifica Assicurato' : 'Nuovo Assicurato' }}</h3>
+          <button class="btn-close" (click)="closeModal()">&times;</button>
+        </div>
+
+        <form class="modal-body" (ngSubmit)="saveAssicurato()">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="codiceFiscale">Codice Fiscale *</label>
+              <input
+                id="codiceFiscale"
+                type="text"
+                [(ngModel)]="newAssicurato.codice_fiscale"
+                name="codiceFiscale"
+                required
+                maxlength="16"
+                class="form-control">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="nome">Nome *</label>
+              <input
+                id="nome"
+                type="text"
+                [(ngModel)]="newAssicurato.nome"
+                name="nome"
+                required
+                class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="cognome">Cognome *</label>
+              <input
+                id="cognome"
+                type="text"
+                [(ngModel)]="newAssicurato.cognome"
+                name="cognome"
+                required
+                class="form-control">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="dataNascita">Data di Nascita *</label>
+              <input
+                id="dataNascita"
+                type="date"
+                [(ngModel)]="newAssicurato.data_nascita"
+                name="dataNascita"
+                required
+                class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                [(ngModel)]="newAssicurato.email"
+                name="email"
+                class="form-control">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="telefono">Telefono</label>
+              <input
+                id="telefono"
+                type="tel"
+                [(ngModel)]="newAssicurato.telefono"
+                name="telefono"
+                class="form-control">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="indirizzo">Indirizzo</label>
+              <input
+                id="indirizzo"
+                type="text"
+                [(ngModel)]="newAssicurato.indirizzo"
+                name="indirizzo"
+                class="form-control">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cap">CAP</label>
+              <input
+                id="cap"
+                type="text"
+                [(ngModel)]="newAssicurato.cap"
+                name="cap"
+                maxlength="5"
+                class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="citta">Città</label>
+              <input
+                id="citta"
+                type="text"
+                [(ngModel)]="newAssicurato.citta"
+                name="citta"
+                class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="provincia">Provincia</label>
+              <input
+                id="provincia"
+                type="text"
+                [(ngModel)]="newAssicurato.provincia"
+                name="provincia"
+                maxlength="2"
+                class="form-control">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="newAssicurato.attivo"
+                  name="attivo">
+                Attivo
+              </label>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">
+              Annulla
+            </button>
+            <button type="submit" class="btn btn-primary">
+              {{ isEditing() ? 'Aggiorna' : 'Crea' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

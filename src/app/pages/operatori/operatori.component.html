@@ -1,0 +1,305 @@
+<div class="container">
+  <div class="header">
+    <h1>Gestione Operatori</h1>
+    <button class="btn btn-primary" (click)="openCreateModal()">
+      <i class="icon-plus"></i>
+      Nuovo Operatore
+    </button>
+  </div>
+
+  <!-- Filtri -->
+  <div class="filters">
+    <div class="filter-group">
+      <label for="search">Cerca:</label>
+      <input
+        id="search"
+        type="text"
+        placeholder="Nome, codice, email, ruolo..."
+        [value]="searchTerm()"
+        (input)="onSearchChange($event)"
+        class="form-control">
+    </div>
+
+    <div class="filter-group">
+      <label for="ruolo">Ruolo:</label>
+      <select
+        id="ruolo"
+        [value]="filterRuolo()"
+        (change)="onRuoloFilterChange($event)"
+        class="form-control">
+        <option value="all">Tutti i ruoli</option>
+        @for (ruolo of ruoli(); track ruolo.id_ruolo_operatore) {
+          <option [value]="ruolo.id_ruolo_operatore">{{ ruolo.descrizione }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="stato">Stato:</label>
+      <select
+        id="stato"
+        [value]="filterStato()"
+        (change)="onStatoFilterChange($event)"
+        class="form-control">
+        <option value="all">Tutti</option>
+        <option value="active">Attivi</option>
+        <option value="inactive">Non Attivi</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Tabella Operatori -->
+  <div class="table-container">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Codice</th>
+          <th>Nome Completo</th>
+          <th>Ruolo</th>
+          <th>Email</th>
+          <th>Carico Lavoro</th>
+          <th>Performance</th>
+          <th>Data Assunzione</th>
+          <th>Stato</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (operatore of filteredOperatori(); track operatore.id_operatore) {
+          <tr>
+            <td class="code">{{ operatore.codice_operatore }}</td>
+            <td>
+              <div class="name-cell">
+                <strong>{{ operatore.nome_completo }}</strong>
+                @if (operatore.telefono) {
+                  <small>📞 {{ operatore.telefono }}</small>
+                }
+              </div>
+            </td>
+            <td>
+              <span [class]="'badge ' + getRuoleBadgeClass(operatore.ruolo)">
+                {{ operatore.ruolo }}
+              </span>
+              <div class="authorization-level">
+                Livello {{ operatore.livello_autorizzazione }}
+              </div>
+            </td>
+            <td>
+              <a [href]="'mailto:' + operatore.email">{{ operatore.email }}</a>
+            </td>
+            <td>
+              <div class="workload-cell">
+                <div [class]="'workload-indicator ' + getWorkloadClass(operatore.sinistri_aperti)">
+                  <span class="workload-number">{{ operatore.sinistri_aperti }}</span>
+                  <span class="workload-label">aperti</span>
+                </div>
+                <small>{{ operatore.sinistri_assegnati }} totali</small>
+              </div>
+            </td>
+            <td>
+              <div class="performance-cell">
+                @if (operatore.perizie_effettuate > 0) {
+                  <div class="stat-item">
+                    <span class="stat-number">{{ operatore.perizie_effettuate }}</span>
+                    <span class="stat-label">perizie</span>
+                  </div>
+                  @if (operatore.importo_medio_perizie) {
+                    <div class="stat-item">
+                      <span class="stat-number">{{ formatCurrency(operatore.importo_medio_perizie) }}</span>
+                      <span class="stat-label">media</span>
+                    </div>
+                  }
+                } @else {
+                  <span class="no-data-small">-</span>
+                }
+              </div>
+            </td>
+            <td>{{ formatDate(operatore.data_assunzione) }}</td>
+            <td>
+              <span [class]="'badge ' + getStatusBadgeClass(operatore.attivo)">
+                {{ operatore.stato_operatore }}
+              </span>
+              @if (operatore.data_cessazione) {
+                <small class="cessation-date">
+                  fino al {{ formatDate(operatore.data_cessazione) }}
+                </small>
+              }
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button
+                  class="btn btn-sm btn-info"
+                  (click)="viewDetails(operatore)"
+                  title="Visualizza dettagli">
+                  <i class="icon-eye"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-secondary"
+                  (click)="openEditModal(operatore)"
+                  title="Modifica">
+                  <i class="icon-edit"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-danger"
+                  (click)="deleteOperatore(operatore.id_operatore)"
+                  title="Elimina">
+                  <i class="icon-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="9" class="no-data">
+              Nessun operatore trovato
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal per Creazione/Modifica -->
+  @if (isModalOpen()) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ isEditing() ? 'Modifica Operatore' : 'Nuovo Operatore' }}</h3>
+          <button class="btn-close" (click)="closeModal()">&times;</button>
+        </div>
+
+        <form class="modal-body" (ngSubmit)="saveOperatore()">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="codiceOperatore">Codice Operatore *</label>
+              <div class="input-group">
+                <input
+                  id="codiceOperatore"
+                  type="text"
+                  [(ngModel)]="newOperatore.codice_operatore"
+                  name="codiceOperatore"
+                  required
+                  maxlength="10"
+                  class="form-control">
+                @if (!isEditing()) {
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    (click)="onGenerateCodice()"
+                    title="Genera codice automatico">
+                    🎲
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="nome">Nome *</label>
+              <input
+                id="nome"
+                type="text"
+                [(ngModel)]="newOperatore.nome"
+                name="nome"
+                required
+                class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="cognome">Cognome *</label>
+              <input
+                id="cognome"
+                type="text"
+                [(ngModel)]="newOperatore.cognome"
+                name="cognome"
+                required
+                class="form-control">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ruolo">Ruolo *</label>
+              <select
+                id="ruolo"
+                [(ngModel)]="newOperatore.id_ruolo_operatore"
+                name="ruolo"
+                required
+                class="form-control">
+                @for (ruolo of ruoli(); track ruolo.id_ruolo_operatore) {
+                  <option [value]="ruolo.id_ruolo_operatore">
+                    {{ ruolo.descrizione }} (Livello {{ ruolo.livello_autorizzazione }})
+                  </option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="email">Email *</label>
+              <input
+                id="email"
+                type="email"
+                [(ngModel)]="newOperatore.email"
+                name="email"
+                required
+                class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="telefono">Telefono</label>
+              <input
+                id="telefono"
+                type="tel"
+                [(ngModel)]="newOperatore.telefono"
+                name="telefono"
+                class="form-control">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="dataAssunzione">Data Assunzione</label>
+              <input
+                id="dataAssunzione"
+                type="date"
+                [(ngModel)]="newOperatore.data_assunzione"
+                name="dataAssunzione"
+                class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="dataCessazione">Data Cessazione</label>
+              <input
+                id="dataCessazione"
+                type="date"
+                [(ngModel)]="newOperatore.data_cessazione"
+                name="dataCessazione"
+                class="form-control">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="newOperatore.attivo"
+                  name="attivo">
+                Attivo
+              </label>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">
+              Annulla
+            </button>
+            <button type="submit" class="btn btn-primary">
+              {{ isEditing() ? 'Aggiorna' : 'Crea' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

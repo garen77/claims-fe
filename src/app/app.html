@@ -1,0 +1,81 @@
+<style>
+  .header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .nav-brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    text-decoration: none;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .nav {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+  }
+
+  .nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    transform: translateY(-2px);
+  }
+
+  .nav-link.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+
+  .main-content {
+    min-height: calc(100vh - 200px);
+  }
+
+  @media (max-width: 768px) {
+    .nav {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .nav-link {
+      text-align: center;
+    }
+  }
+</style>
+
+<header class="header">
+  <div class="container">
+    <a href="#" class="nav-brand">🏢 Sistema Gestione Sinistri</a>
+    <nav class="nav">
+      <a routerLink="/assicurati" routerLinkActive="active" class="nav-link">👥 Assicurati</a>
+      <a routerLink="/operatori" routerLinkActive="active" class="nav-link">👨‍💼 Operatori</a>
+      <a routerLink="/polizze" routerLinkActive="active" class="nav-link">📋 Polizze</a>
+      <a routerLink="/sinistri" routerLinkActive="active" class="nav-link">⚠️ Sinistri</a>
+      <a routerLink="/perizie" routerLinkActive="active" class="nav-link">🔍 Perizie</a>
+    </nav>
+  </div>
+</header>
+
+<main class="main-content">
+  <router-outlet />
+</main>
